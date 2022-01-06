@@ -1,0 +1,10 @@
+[package]
+name = "mixes-rating-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mixes-rating = { git = "https://github.com/tf2-mixes/mixes-rating" }
+mixes-db = { git = "https://github.com/tf2-mixes/mixes-db" }
