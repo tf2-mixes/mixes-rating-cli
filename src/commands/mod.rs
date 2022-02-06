@@ -1,14 +1,45 @@
+pub mod add_user;
+pub mod help;
+pub mod rank_by_win_rate;
+pub mod update;
+pub mod win_rate;
+
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
+pub use add_user::AddUser;
+pub use help::Help;
 use mixes_db::sql_db::SQLDb;
-use mixes_db::Database;
+use mixes_db::{Database, SteamID};
 use mixes_rating::MixesElo;
+pub use update::Update;
+pub use win_rate::WinRate;
 
-#[derive(Copy, Clone)]
-pub enum Command
+use self::rank_by_win_rate::RankByWinRate;
+
+pub trait Command
 {
-    Help,
+    fn num_args(&self) -> RangeInclusive<usize>;
+
+    fn execute(
+        &self,
+        ratings: &mut MixesElo<SQLDb>,
+        args: &[&str],
+    ) -> Result<(), <SQLDb as Database>::Error>;
+
+    fn help(&self) -> &'static str;
+}
+
+fn command_from_str(s: &str) -> Option<Box<dyn Command>>
+{
+    match s {
+        "help" => Some(Box::new(Help)),
+        "add_user" => Some(Box::new(AddUser)),
+        "update" => Some(Box::new(Update)),
+        "win_rate" => Some(Box::new(WinRate)),
+        "rank_by_win_rate" => Some(Box::new(RankByWinRate)),
+        _ => None,
+    }
 }
 
 /// Take the command string, seperate it into its base command and arguments and
@@ -33,9 +64,9 @@ pub fn parse_command_and_execute(command: &str, ratings: &mut MixesElo<SQLDb>) -
         return false;
     }
 
-    let command = match Command::from_str(command) {
-        Ok(cmd) => cmd,
-        Err(()) => {
+    let command = match command_from_str(command) {
+        Some(cmd) => cmd,
+        None => {
             println!("Unknown command: {}", command);
             return true;
         },
@@ -54,37 +85,4 @@ pub fn parse_command_and_execute(command: &str, ratings: &mut MixesElo<SQLDb>) -
     }
 
     true
-}
-
-impl Command
-{
-    pub fn num_args(self) -> RangeInclusive<usize>
-    {
-        match self {
-            Self::Help => 0..=usize::MAX,
-        }
-    }
-
-    pub fn execute(
-        self,
-        ratings: &mut MixesElo<SQLDb>,
-        args: &[&str],
-    ) -> Result<(), <SQLDb as Database>::Error>
-    {
-        todo!()
-    }
-}
-
-impl FromStr for Command
-{
-    // Always means 'unknown command'
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err>
-    {
-        match s {
-            "help" => Ok(Self::Help),
-            o => Err(()),
-        }
-    }
 }
